@@ -1,0 +1,40 @@
+[project]
+name = "dracai-multimodal-rag-system"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aiofiles>=25.1.0",
+    "chromadb>=1.2.2",
+    "fastapi>=0.120.1",
+    "httpx>=0.28.1",
+    "langchain>=1.0.2",
+    "langchain-chroma>=1.0.0",
+    "langchain-community>=0.4.1",
+    "langchain-google-genai>=3.0.0",
+    "langchain-groq>=1.0.0",
+    "langgraph>=1.0.1",
+    "loguru>=0.7.3",
+    "numpy>=2.3.4",
+    "open-clip-torch>=3.2.0",
+    "pandas>=2.3.3",
+    "pillow>=12.0.0",
+    "pydantic>=2.12.3",
+    "pydantic-settings>=2.11.0",
+    "pymupdf>=1.26.5",
+    "pytesseract>=0.3.13",
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
+    "python-dotenv>=1.2.1",
+    "python-json-logger>=4.0.0",
+    "python-magic>=0.4.27",
+    "python-multipart>=0.0.20",
+    "requests>=2.32.5",
+    "sentence-transformers>=5.1.2",
+    "streamlit>=1.22.0",
+    "torch>=2.9.0",
+    "torchvision>=0.24.0",
+    "transformers>=4.57.1",
+    "uvicorn[standard]>=0.38.0",
+]
