@@ -23,6 +23,7 @@ class DocumentMetadata(BaseModel):
     has_text: bool = False
     source_path: str
 
+
 class UploadResponse(BaseModel):
     """Response model for document upload."""
     success: bool
@@ -38,6 +39,7 @@ class QueryRequest(BaseModel):
     top_k: int = Field(default=5, ge=1, le=20)
     filter_metadata: Optional[Dict[str, Any]] = None
     include_images: bool = True
+    thread_id: Optional[str] = None  # Added for conversation history
 
 
 class RetrievedDocument(BaseModel):
@@ -64,3 +66,10 @@ class HealthResponse(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.now)
     vector_store_status: str
     total_documents: int
+
+class ProcessingStatus(BaseModel):
+    """Status of document processing."""
+    document_id: str
+    status: str  # "processing", "completed", "failed"
+    progress: float  # 0.0 to 1.0
+    message: Optional[str] = None

@@ -35,6 +35,10 @@ class VectorStore:
     
     def add_documents(self, chunks: List[Dict[str, Any]], document_id: str) -> int:
         """Add document chunks to the vector store."""
+        if not chunks:
+            logger.warning(f"No chunks to add for document {document_id}")
+            return 0
+            
         ids = []
         embeddings = []
         documents = []
@@ -45,7 +49,7 @@ class VectorStore:
             ids.append(chunk_id)
             if chunk.get("chunk_type") == "image":
                 embedding = self.embedding_service.embed_image(chunk["image_data"])
-                ### sstoring refernces as metadata in images
+                ### storing references as metadata in images
                 chunk["metadata"]["has_image"] = True
                 chunk["metadata"]["image_id"] = chunk_id
             else:
@@ -65,8 +69,11 @@ class VectorStore:
         
         # Add to ChromaDB
         try:
-            self.collection.add(ids=ids, embeddings=embeddings,
-                documents=documents, metadatas=metadatas
+            self.collection.add(
+                ids=ids, 
+                embeddings=embeddings,
+                documents=documents, 
+                metadatas=metadatas
             )
             logger.info(f"Added {len(chunks)} chunks for document {document_id}")
             return len(chunks)
@@ -74,13 +81,15 @@ class VectorStore:
             logger.error(f"Error adding documents to vector store: {e}")
             raise
     
-    def query(self, query_text: str, top_k: int = 5,filter_dict: Optional[Dict[str, Any]] = None,include_images: bool = True) -> List[Dict[str, Any]]:
+    def query(self, query_text: str, top_k: int = 5, filter_dict: Optional[Dict[str, Any]] = None, include_images: bool = True) -> List[Dict[str, Any]]:
         """Query the vector store."""
         query_embedding = self.embedding_service.embed_query(query_text)
+        
         # Build where clause for filtering
+        # ✅ Fix: Only set where_clause if filter_dict has content
         where_clause = None
-        if filter_dict:
-            where_clause = filter_dict
+        if filter_dict and len(filter_dict) > 0:
+            where_clause = filter_dict.copy()  # Use copy to avoid modifying original
         
         # If not including images, filter them out
         if not include_images:
@@ -89,14 +98,18 @@ class VectorStore:
             else:
                 where_clause = {"chunk_type": {"$ne": "image"}}
         
-        ### relavent documents from database
+        ### relevant documents from database
         try:
-            results = self.collection.query(
-                query_embeddings=[query_embedding],
-                n_results=top_k,
-                where=where_clause,
-                include=["documents", "metadatas", "distances"]
-            )
+            query_params = {
+                "query_embeddings": [query_embedding],
+                "n_results": top_k,
+                "include": ["documents", "metadatas", "distances"]
+            }
+            
+            if where_clause:
+                query_params["where"] = where_clause
+            
+            results = self.collection.query(**query_params)
             
             # Format results
             retrieved_docs = []
@@ -121,16 +134,19 @@ class VectorStore:
     def delete_document(self, document_id: str) -> bool:
         """Delete all chunks belonging to a document."""
         try:
+            # ✅ Get all chunks with this document_id
             results = self.collection.get(
                 where={"document_id": document_id},
-                include=[]
+                include=["metadatas"]
             )
             
             if results["ids"]:
                 self.collection.delete(ids=results["ids"])
                 logger.info(f"Deleted document {document_id} ({len(results['ids'])} chunks)")
                 return True
-            return False
+            else:
+                logger.warning(f"Document {document_id} not found")
+                return False
             
         except Exception as e:
             logger.error(f"Error deleting document: {e}")

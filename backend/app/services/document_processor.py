@@ -12,7 +12,6 @@ from backend.app.config import settings
 from backend.app.models import FileType, DocumentMetadata
 
 
-
 class DocumentProcessor:
     """Processing various document types into chunks with metadata."""
     def __init__(self):
@@ -98,8 +97,9 @@ class DocumentProcessor:
         chunks = []
         has_text = False
         has_images = False
+        page_count = len(doc) 
         
-        for page_num in range(len(doc)):
+        for page_num in range(page_count):
             page = doc[page_num]
             
             # Extract text
@@ -119,30 +119,34 @@ class DocumentProcessor:
             image_list = page.get_images(full=True)
             for img_index, img in enumerate(image_list):
                 has_images = True
-                xref = img[0]
-                base_image = doc.extract_image(xref)
-                image_bytes = base_image["image"]
-                
-                # Convert to PIL Image
-                image = Image.open(io.BytesIO(image_bytes))
-                
-                # Convert to base64
-                buffered = io.BytesIO()
-                image.save(buffered, format="PNG")
-                img_base64 = base64.b64encode(buffered.getvalue()).decode()
-                
-                chunks.append({
-                    "content": f"Image from {Path(file_path).name}, Page {page_num + 1}, Image {img_index + 1}",
-                    "image_data": img_base64,
-                    "metadata": {
-                        "file_name": Path(file_path).name,
-                        "page_number": page_num + 1,
-                        "image_index": img_index + 1,
-                        "chunk_type": "image",
-                        "source_path": file_path
-                    },
-                    "chunk_type": "image"
-                })
+                try:
+                    xref = img[0]
+                    base_image = doc.extract_image(xref)
+                    image_bytes = base_image["image"]
+                    
+                    # Convert to PIL Image
+                    image = Image.open(io.BytesIO(image_bytes))
+                    
+                    # Convert to base64
+                    buffered = io.BytesIO()
+                    image.save(buffered, format="PNG")
+                    img_base64 = base64.b64encode(buffered.getvalue()).decode()
+                    
+                    chunks.append({
+                        "content": f"Image from {Path(file_path).name}, Page {page_num + 1}, Image {img_index + 1}",
+                        "image_data": img_base64,
+                        "metadata": {
+                            "file_name": Path(file_path).name,
+                            "page_number": page_num + 1,
+                            "image_index": img_index + 1,
+                            "chunk_type": "image",
+                            "source_path": file_path
+                        },
+                        "chunk_type": "image"
+                    })
+                except Exception as e:
+                    logger.warning(f"Failed to extract image {img_index + 1} from page {page_num + 1}: {e}")
+                    continue
         
         doc.close()
         
@@ -153,7 +157,7 @@ class DocumentProcessor:
             file_name=Path(file_path).name,
             file_type=file_type,
             file_size=file_stat.st_size,
-            page_count=len(doc),
+            page_count=page_count,  
             has_text=has_text,
             has_images=has_images,
             source_path=file_path

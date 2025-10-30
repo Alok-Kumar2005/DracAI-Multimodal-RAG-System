@@ -46,10 +46,15 @@ class QueryService:
         """Retrieve relevant documents from vector store."""
         logger.info(f"Retrieving documents for query: {state['query']}")
         
-        # Get metadata if present
-        metadata_filter = state.get("metadata", {}).get("filter", None)
-        include_images = state.get("metadata", {}).get("include_images", True)
-        top_k = state.get("metadata", {}).get("top_k", settings.top_k_results)
+        metadata = state.get("metadata", {})
+        metadata_filter = metadata.get("filter", None)
+        if metadata_filter:
+            metadata_filter = {k: v for k, v in metadata_filter.items() if v is not None and v != {}}
+            if not metadata_filter:  
+                metadata_filter = None
+        
+        include_images = metadata.get("include_images", True)
+        top_k = metadata.get("top_k", settings.top_k_results)
         
         # Document retrieval
         retrieved_docs = self.vector_store.query(
@@ -135,6 +140,13 @@ Please provide a comprehensive answer based on the context above. If the context
             }
         }
         
+        ###Clean filter_metadata before passing
+        cleaned_filter = None
+        if filter_metadata:
+            cleaned_filter = {k: v for k, v in filter_metadata.items() if v is not None and v != {}}
+            if not cleaned_filter:
+                cleaned_filter = None
+        
         initial_state: RAGState = {
             "query": query,
             "retrieved_docs": [],
@@ -142,7 +154,7 @@ Please provide a comprehensive answer based on the context above. If the context
             "answer": "",
             "metadata": {
                 "top_k": top_k,
-                "filter": filter_metadata,
+                "filter": cleaned_filter,
                 "include_images": include_images
             },
             "messages": []
@@ -183,6 +195,14 @@ Please provide a comprehensive answer based on the context above. If the context
     def query(self, query: str, top_k: int = 5,filter_metadata: Optional[Dict[str, Any]] = None,include_images: bool = True) -> Dict[str, Any]:
         """Synchronous query method (for backward compatibility)"""
         start_time = time.time()
+        
+        ###Clean filter_metadata before passing
+        cleaned_filter = None
+        if filter_metadata:
+            cleaned_filter = {k: v for k, v in filter_metadata.items() if v is not None and v != {}}
+            if not cleaned_filter:
+                cleaned_filter = None
+        
         initial_state: RAGState = {
             "query": query,
             "retrieved_docs": [],
@@ -190,14 +210,13 @@ Please provide a comprehensive answer based on the context above. If the context
             "answer": "",
             "metadata": {
                 "top_k": top_k,
-                "filter": filter_metadata,
+                "filter": cleaned_filter,
                 "include_images": include_images
             },
             "messages": []
         }
         
         try:
-            # Execute without checkpointer for sync calls
             result = self._retrieve_documents(initial_state)
             result = self._generate_answer(result)
             processing_time = time.time() - start_time
