@@ -23,3 +23,44 @@ class DocumentMetadata(BaseModel):
     has_text: bool = False
     source_path: str
 
+class UploadResponse(BaseModel):
+    """Response model for document upload."""
+    success: bool
+    message: str
+    document_id: str
+    metadata: DocumentMetadata
+    chunks_created: int
+
+
+class QueryRequest(BaseModel):
+    """Request model for querying the RAG system."""
+    query: str
+    top_k: int = Field(default=5, ge=1, le=20)
+    filter_metadata: Optional[Dict[str, Any]] = None
+    include_images: bool = True
+
+
+class RetrievedDocument(BaseModel):
+    """Model for retrieved document chunks."""
+    content: str
+    metadata: Dict[str, Any]
+    relevance_score: float
+    document_id: str
+    chunk_id: Optional[str] = None
+
+
+class QueryResponse(BaseModel):
+    """Response model for query results."""
+    query: str
+    answer: str
+    retrieved_documents: List[RetrievedDocument]
+    total_results: int
+    processing_time: float
+
+
+class HealthResponse(BaseModel):
+    """Health check response."""
+    status: str
+    timestamp: datetime = Field(default_factory=datetime.now)
+    vector_store_status: str
+    total_documents: int
