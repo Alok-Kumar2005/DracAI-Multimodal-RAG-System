@@ -1,7 +1,8 @@
+from typing import List, Dict, Any
 from typing_extensions import TypedDict
-from typing import List, Dict, Any, Optional, Annotated
-from typing_extensions import TypedDict
+from langgraph.graph.message import add_messages
 from langchain_core.messages import BaseMessage
+from typing import Annotated
 
 
 class RAGState(TypedDict):
@@ -10,4 +11,4 @@ class RAGState(TypedDict):
     context: str
     answer: str
     metadata: Dict[str, Any]
-    messages: Annotated[List[BaseMessage], "conversation messages"]
+    messages: Annotated[List[BaseMessage], add_messages]

@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
     upload_directory: str = "./data/uploads"
     max_upload_size: int = 10485760  ### 10 MB
+    api_host: str = "0.0.0.0"
+    api_port: int = 8000
+    debug: bool = True
     
     def create_directories(self):
         """Create necessary directories if they don't exist."""
