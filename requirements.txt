@@ -32,3 +32,5 @@ streamlit
 requests
 pandas
 python-dotenv
+aiosqlite
+langgraph-checkpoint-sqlite

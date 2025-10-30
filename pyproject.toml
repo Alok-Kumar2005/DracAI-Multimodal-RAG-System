@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "aiofiles>=25.1.0",
+    "aiosqlite>=0.21.0",
     "chromadb>=1.2.2",
     "fastapi>=0.120.1",
     "httpx>=0.28.1",
@@ -15,6 +16,7 @@ dependencies = [
     "langchain-google-genai>=3.0.0",
     "langchain-groq>=1.0.0",
     "langgraph>=1.0.1",
+    "langgraph-checkpoint-sqlite>=3.0.0",
     "loguru>=0.7.3",
     "numpy>=2.3.4",
     "open-clip-torch>=3.2.0",
