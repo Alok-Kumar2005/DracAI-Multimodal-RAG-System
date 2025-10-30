@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     clip_model: str = "openai/clip-vit-base-patch32"
     chroma_persist_directory: str = "./chroma_db"
     collection_name: str = "multimodal_rag"
+    gemini_api_key = str
     
     class Config:
         env_file = ".env"
