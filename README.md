@@ -94,4 +94,4 @@ uv add -r requirements.txt
 
 
 # Some Result
-![Frontend Image](images/Screenshot 2025-10-31 164711.png)
+![Frontend Image](images/frontend.png)
