@@ -1,10 +1,8 @@
-version: '3.8'
-
 services:
   backend:
     build:
-      context: .
-      dockerfile: backend/Dockerfile
+      context: ./backend
+      dockerfile: Dockerfile
     image: rag-backend:latest
     container_name: rag-backend
     ports:
@@ -21,8 +19,8 @@ services:
 
   frontend:
     build:
-      context: .
-      dockerfile: frontend/Dockerfile
+      context: ./frontend
+      dockerfile: Dockerfile
     image: rag-frontend:latest
     container_name: rag-frontend
     ports:

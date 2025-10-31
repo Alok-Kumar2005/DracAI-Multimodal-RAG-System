@@ -1,3 +1,4 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
 fastapi
 uvicorn[standard]
 python-multipart
@@ -26,9 +27,9 @@ python-json-logger
 pytest
 pytest-asyncio
 httpx
-streamlit
 requests
 pandas
 python-dotenv
 aiosqlite
 langgraph-checkpoint-sqlite
+streamlit
