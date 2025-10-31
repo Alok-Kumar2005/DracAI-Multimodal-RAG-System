@@ -11,14 +11,12 @@ langgraph
 langchain-chroma
 PyMuPDF
 Pillow
-pytesseract
 python-magic
 chromadb
 sentence-transformers
 torch
 torchvision
 transformers
-open_clip_torch
 python-dotenv
 httpx
 aiofiles
