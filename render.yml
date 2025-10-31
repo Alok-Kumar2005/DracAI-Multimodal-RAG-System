@@ -1,18 +1,38 @@
 services:
+  # Backend Service
   - type: web
-    name: multimodal-rag
+    name: rag-backend
     env: docker
-    plan: free
-    region: oregon
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
     envVars:
       - key: GEMINI_API_KEY
         sync: false
       - key: LANGCHAIN_TRACING_V2
-        value: true
-      - key: LANGCHAIN_ENDPOINT
-        value: https://api.smith.langchain.com
+        value: "false"
       - key: LANGCHAIN_API_KEY
         sync: false
-      - key: LANGCHAIN_PROJECT
-        value: multimodal-rag
+    healthCheckPath: /api/v1/health
+    
+  # Frontend Service  
+  - type: web
+    name: rag-frontend
+    env: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    envVars:
+      - key: API_BASE_URL
+        fromService:
+          name: rag-backend
+          type: web
+          property: host
+          envVarKey: API_BASE_URL
+
+  # Persistent Disk for Vector Store
+  - type: pserv
+    name: rag-data
+    env: docker
+    disk:
+      name: chroma-data
+      mountPath: /data
+      sizeGB: 10
