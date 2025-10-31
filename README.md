@@ -95,3 +95,5 @@ uv add -r requirements.txt
 
 # Some Result
 ![Frontend Image](images/frontend.png)
+# link of deployed frontend
+- https://dracai-multimodal-rag-system-7.onrender.com/
