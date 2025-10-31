@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: multimodal-rag
+    env: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: LANGCHAIN_TRACING_V2
+        value: true
+      - key: LANGCHAIN_ENDPOINT
+        value: https://api.smith.langchain.com
+      - key: LANGCHAIN_API_KEY
+        sync: false
+      - key: LANGCHAIN_PROJECT
+        value: multimodal-rag
