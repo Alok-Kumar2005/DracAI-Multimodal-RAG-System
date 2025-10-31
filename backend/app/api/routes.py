@@ -15,6 +15,7 @@ from backend.app.config import settings
 from backend.app.services.document_processor import DocumentProcessor
 from backend.app.services.vector_store import VectorStore
 from backend.app.services.query_service import QueryService
+from backend.app.utils.token_counter import count_tokens
 
 document_processor = DocumentProcessor()
 vector_store = VectorStore()
@@ -43,7 +44,7 @@ async def health_check():
 async def upload_document(file: UploadFile = File(...), background_tasks: BackgroundTasks = None):
     """Upload and process a document."""
     try:
-        file.file.seek(0, 2)  # Seek to end
+        file.file.seek(0, 2)
         file_size = file.file.tell()
         file.file.seek(0)
         
@@ -53,7 +54,6 @@ async def upload_document(file: UploadFile = File(...), background_tasks: Backgr
                 detail=f"File too large. Maximum size: {settings.max_upload_size} bytes"
             )
         
-        ### first find the file type
         file_ext = Path(file.filename).suffix.lower()
         
         if file_ext in {'.txt', '.md', '.csv'}:
@@ -68,7 +68,6 @@ async def upload_document(file: UploadFile = File(...), background_tasks: Backgr
                 detail=f"Unsupported file type: {file_ext}"
             )
         
-        ### saving file
         save_dir.mkdir(parents=True, exist_ok=True)
         file_path = save_dir / file.filename
         
@@ -125,21 +124,46 @@ async def query_documents(request: QueryRequest):
     try:
         if not request.query.strip():
             raise HTTPException(status_code=400, detail="Query cannot be empty")
-        
-        # Generate thread_id if not provided
+
+        query_tokens = count_tokens(request.query)
+        logger.info(f"Query tokens: {query_tokens}")
+
+        TOKEN_LIMIT = settings.token_limit
         thread_id = getattr(request, 'thread_id', None)
         if not thread_id:
             import uuid
             thread_id = str(uuid.uuid4())
-        
-        # Use synchronous query for now
+
+        conversation_tokens = sum(
+            msg.get("token_count", 0)
+            for msg in conversations_db.get(thread_id, {}).get("messages", [])
+        )
+
+        total_estimated_tokens = query_tokens + conversation_tokens
+        if query_tokens > TOKEN_LIMIT:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Query too long ({query_tokens} tokens). Limit is {TOKEN_LIMIT}."
+            )
+
+        if total_estimated_tokens > TOKEN_LIMIT:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Conversation exceeds token limit "
+                    f"({total_estimated_tokens} tokens). Limit is {TOKEN_LIMIT}."
+                )
+            )
         result = query_service.query(
             query=request.query,
             top_k=request.top_k,
             filter_metadata=request.filter_metadata,
             include_images=request.include_images
         )
-        
+
+        answer_tokens = count_tokens(result["answer"])
+        logger.info(f"Answer tokens: {answer_tokens}")
+
         retrieved_docs = [
             RetrievedDocument(
                 content=doc["content"],
@@ -150,8 +174,6 @@ async def query_documents(request: QueryRequest):
             )
             for doc in result["retrieved_documents"]
         ]
-        
-        # Store conversation
         if thread_id not in conversations_db:
             conversations_db[thread_id] = {
                 "thread_id": thread_id,
@@ -159,23 +181,23 @@ async def query_documents(request: QueryRequest):
                 "messages": [],
                 "created_at": str(datetime.now())
             }
-        
-        # Add messages to conversation
+
         conversations_db[thread_id]["messages"].extend([
             {
                 "role": "user",
                 "content": request.query,
-                "timestamp": str(datetime.now())
+                "timestamp": str(datetime.now()),
+                "token_count": query_tokens
             },
             {
                 "role": "assistant",
                 "content": result["answer"],
                 "timestamp": str(datetime.now()),
                 "retrieved_documents": [doc.dict() for doc in retrieved_docs],
-                "processing_time": result["processing_time"]
+                "processing_time": result["processing_time"],
+                "token_count": answer_tokens
             }
         ])
-        
         response = QueryResponse(
             query=result["query"],
             answer=result["answer"],
@@ -183,13 +205,18 @@ async def query_documents(request: QueryRequest):
             total_results=result["total_results"],
             processing_time=result["processing_time"]
         )
-        
-        # Add thread_id to response
+
         response_dict = response.dict()
         response_dict["thread_id"] = thread_id
-        
+        response_dict["query_tokens"] = query_tokens
+        response_dict["answer_tokens"] = answer_tokens
+        response_dict["total_tokens"] = query_tokens + answer_tokens
+        response_dict["conversation_tokens"] = total_estimated_tokens
+
         return response_dict
-        
+
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error processing query: {e}")
         raise HTTPException(status_code=500, detail=f"Query processing failed: {str(e)}")
@@ -277,7 +304,6 @@ async def reset_database():
     try:
         success = vector_store.reset_collection()
         if success:
-            # Also clear conversations
             conversations_db.clear()
             return {"message": "Database reset successfully"}
         else:
