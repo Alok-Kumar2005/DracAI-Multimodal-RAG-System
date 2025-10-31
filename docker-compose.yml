@@ -1,16 +1,16 @@
 services:
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     image: rag-backend:latest
     container_name: rag-backend
     ports:
       - "8000:8000"
     volumes:
-      - ./data:/app/data
-      - ./chroma_db:/app/chroma_db
-      - ./logs:/app/logs
+      - ./data:/code/data
+      - ./chroma_db:/code/chroma_db
+      - ./logs:/code/logs
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2}

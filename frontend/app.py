@@ -2,9 +2,10 @@ import streamlit as st
 import requests
 from datetime import datetime
 import uuid
+import os
 
 # Configuration
-API_BASE_URL = "http://localhost:8000/api/v1"  # Changed from backend:8000 to localhost:8000
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000/api/v1")
 
 # Page config
 st.set_page_config(
@@ -107,7 +108,7 @@ def load_conversation(thread_id: str):
             data = response.json()
             st.session_state.thread_id = thread_id
             st.session_state.current_messages = data["messages"]
-            st.experimental_rerun()
+            st.rerun()
     except Exception as e:
         st.error(f"Error loading conversation: {e}")
 
@@ -121,7 +122,7 @@ def delete_conversation(thread_id: str):
                 st.session_state.thread_id = None
                 st.session_state.current_messages = []
             fetch_conversations()
-            st.experimental_rerun()
+            st.rerun()
     except Exception as e:
         st.error(f"Error deleting conversation: {e}")
 
@@ -130,7 +131,7 @@ def new_conversation():
     """Start a new conversation."""
     st.session_state.thread_id = None
     st.session_state.current_messages = []
-    st.experimental_rerun()
+    st.rerun()
 
 
 def reset_database():
@@ -146,7 +147,7 @@ def reset_database():
             st.session_state.show_reset_confirm = False
             st.session_state.reset_confirmation_text = ""
             st.success("✅ Database reset successfully! All documents and conversations have been deleted.")
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.error(f"Reset failed: {response.text}")
     except Exception as e:
@@ -280,7 +281,7 @@ def main():
         if not st.session_state.show_reset_confirm:
             if st.button("🗑️ Reset Database", use_container_width=True, type="secondary"):
                 st.session_state.show_reset_confirm = True
-                st.experimental_rerun()
+                st.rerun()
         else:
             st.warning("⚠️ **WARNING**: This will delete ALL documents and conversations permanently!")
             st.markdown("Type **DELETE** to confirm:")
@@ -297,7 +298,7 @@ def main():
                 if st.button("Cancel", use_container_width=True):
                     st.session_state.show_reset_confirm = False
                     st.session_state.reset_confirmation_text = ""
-                    st.experimental_rerun()
+                    st.rerun()
             with col2:
                 if st.button("Confirm Reset", use_container_width=True, type="primary", disabled=(confirmation != "DELETE")):
                     if confirmation == "DELETE":
@@ -372,7 +373,7 @@ def main():
     if st.button("Send", use_container_width=True) and query:
         with st.spinner("Processing..."):
             send_query(query, include_images)
-            st.experimental_rerun()
+            st.rerun()
     
     # Show system status
     with st.expander("ℹ️ System Status"):
